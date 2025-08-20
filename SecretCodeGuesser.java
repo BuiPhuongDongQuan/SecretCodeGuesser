@@ -11,37 +11,30 @@ public class SecretCodeGuesser {
     public void start() {
 
         // ===== STEP 1: Find length =====
-        int correctLength = -1;
-        for (length = 1; length <= 18; length++) {
-            String candidate = repeatChar('B', length); 
-            int result = code.guess(candidate);
-            if (result != -2) { // Found correct length
-                correctLength = length;
-                break;
-            }
-        }
-        if (correctLength == -1) {
+        length = findLength();
+        if (length == -1) {
             System.out.println("Failed to determine secret code length.");
             return;
         }
-        System.out.println("Length found: " + correctLength);
+        System.out.println("Length found: " + length);
 
-        guessString = initialGuess(alphabet, correctLength);
-            // ===== STEP 2: Donald Knuth's Algorithm and Khoi's Algorithm =====
+        guessString = initialGuess(alphabet, length);
 
-        if (correctLength <= 6) {
+            // ===== STEP 2: Donald Knuth's Algorithm and Position-by-position deduction Algorithm =====
+
+        if (length <= 6) {
             // ===== Donald Knuth's Algorithm =====
-            int totalPossible = (int) Math.pow(alphabet.length, correctLength);
+            int totalPossible = (int) Math.pow(alphabet.length, length);
 
             // Generate all possible codes in an array
             String[] possibleCodes = new String[totalPossible];
-            generateAllCodes(possibleCodes, alphabet, correctLength);
+            generateAllCodes(possibleCodes, alphabet, length);
 
             boolean[] eliminated = new boolean[totalPossible]; // false = still possible
 
             while (true) {
                 score = code.guess(guessString);
-                if (score == correctLength) {
+                if (score == length) {
                     System.out.println("I found the secret code. It is " + guessString);
                     break;
                 }
@@ -63,14 +56,14 @@ public class SecretCodeGuesser {
                     }
                 }
 
-                // Step 3: Pick next guess: choose one minimizing max remaining possibilities
+                // Pick next guess: choose one minimizing max remaining possibilities
                 int bestIndex = -1;
                 int bestWorst = Integer.MAX_VALUE;
                 for (int i = 0; i < totalPossible; i++) {
                     if (eliminated[i]) continue;
 
                     int worstCase = 0;
-                    for (int f = 0; f <= correctLength; f++) {
+                    for (int f = 0; f <= length; f++) {
                         int count = 0;
                         for (int j = 0; j < totalPossible; j++) {
                             if (!eliminated[j] && feedback(possibleCodes[j], possibleCodes[i]) == f) {
@@ -90,7 +83,7 @@ public class SecretCodeGuesser {
             // ===== Position-by-position deduction algorithm =====
             score = code.guess(guessString);
             char[] correctCode = new char[length]; 
-            // Step 3: Deduce each position 
+            // Deduce each position 
             for (int i = 0; i < length; i++) {  
                 for (char c : new char[]{'A','C', 'X', 'I', 'U'}) { 
                     String testChar = setAt(guessString, i, c); 
@@ -105,14 +98,26 @@ public class SecretCodeGuesser {
                     }   
                 } 
             } 
-            // Step 4: Verify final guess 
-
+            // Verify final guess 
             String finalGuess = new String(correctCode); 
             code.guess(finalGuess); 
             System.out.println("I found the secret code. It is " + finalGuess);
         }
     }
 
+
+    // ----Helper method----
+    // Find length
+    public int findLength() { 
+        int len = 1; 
+        while (true) { 
+            guessString = "B".repeat(len); 
+            int result = code.guess(guessString); 
+            if (result != -2) { return len; 
+            } 
+            len++; 
+        } 
+    }
     // Initial guess
     private String initialGuess(char[] alphabet, int length) {
         if(length <= 6) {
@@ -157,16 +162,7 @@ public class SecretCodeGuesser {
         return correct;
     }
 
-    // Helper: repeat a character N times
-    private String repeatChar(char c, int length) {
-        char[] arr = new char[length];
-        for (int i = 0; i < length; i++) {
-            arr[i] = c;
-        }
-        return new String(arr);
-    }
-
-    // Helper: creates a new string
+    // Creates a new string
     public String setAt(String s, int index, char c) { 
         char[] arr = s.toCharArray(); 
         arr[index] = c; 
