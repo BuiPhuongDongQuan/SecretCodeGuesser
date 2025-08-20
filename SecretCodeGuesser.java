@@ -3,10 +3,6 @@ public class SecretCodeGuesser {
     private char[] alphabet = {'B', 'A', 'C', 'X', 'I', 'U'};
     private int length;
     private int score;
-    SecretCode code = new SecretCode();
-    private char[] alphabet = {'B', 'A', 'C', 'X', 'I', 'U'};
-    private int length;
-    private int score;
     private String guessString;
     public void start() {
 
@@ -105,7 +101,6 @@ public class SecretCodeGuesser {
         }
     }
 
-
     // ----Helper method----
     // Find length
     public int findLength() { 
@@ -150,16 +145,14 @@ public class SecretCodeGuesser {
     }
 
     // Knuth's Algorithm: Feedback function — counts correct chars in correct position
-    // Knuth's Algorithm: Feedback function — counts correct chars in correct position
     private int feedback(String code, String guess) {
-        int correct = 0;
-        for (int i = 0; i < code.length(); i++) {
-            if (code.charAt(i) == guess.charAt(i)) {
-                correct++;
-            }
-        }   
-        }   
-        return correct;
+      int correct = 0;
+      for (int i = 0; i < code.length(); i++) {
+        if (code.charAt(i) == guess.charAt(i)) {
+            correct++;
+        }
+      }
+      return correct;
     }
 
     // Creates a new string
