@@ -101,7 +101,6 @@ public class SecretCodeGuesser {
         }
     }
 
-
     // ----Helper method----
     // Find length
     public int findLength() { 
@@ -145,7 +144,6 @@ public class SecretCodeGuesser {
         }
     }
 
-    // Knuth's Algorithm: Feedback function — counts correct chars in correct position
     // Knuth's Algorithm: Feedback function — counts correct chars in correct position
     private int feedback(String code, String guess) {
       int correct = 0;
