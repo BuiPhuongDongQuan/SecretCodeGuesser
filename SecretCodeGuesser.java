@@ -1,108 +1,124 @@
 public class SecretCodeGuesser {
-    private SecretCode code = new SecretCode(); // We'll hold a reference to the judge 
-    private int length; // length of the secret code 
-    private int matched; // matches from guessString "BBBB...B" 
+    SecretCode code = new SecretCode();
+    private char[] alphabet = {'B', 'A', 'C', 'X', 'I', 'U'};
+    private int length;
+    private int score;
     private String guessString;
-    public void start() { 
-        // Find length and set guessString = all "B"  
-        length = findLength(); 
-        char[] correctCode = new char[length];
-        // Deduce each position 
-        if (length > 9) {
-            matched = code.guess(guessString); 
+    public void start() {
+
+        // ===== STEP 1: Find length =====
+        int correctLength = -1;
+        for (length = 1; length <= 18; length++) {
+            String candidate = repeatChar('B', length); 
+            int result = code.guess(candidate);
+            if (result != -2) { // Found correct length
+                correctLength = length;
+                break;
+            }
+        }
+        if (correctLength == -1) {
+            System.out.println("Failed to determine secret code length.");
+            return;
+        }
+        System.out.println("Length found: " + correctLength);
+
+        guessString = initialGuess(alphabet, correctLength);
+            // ===== STEP 2: Donald Knuth's Algorithm and Khoi's Algorithm =====
+
+        if (correctLength <= 6) {
+            // ===== Donald Knuth's Algorithm =====
+            int totalPossible = (int) Math.pow(alphabet.length, correctLength);
+
+            // Generate all possible codes in an array
+            String[] possibleCodes = new String[totalPossible];
+            generateAllCodes(possibleCodes, alphabet, correctLength);
+
+            boolean[] eliminated = new boolean[totalPossible]; // false = still possible
+
+            while (true) {
+                score = code.guess(guessString);
+                if (score == correctLength) {
+                    System.out.println("I found the secret code. It is " + guessString);
+                    break;
+                }
+
+                // Eliminate inconsistent codes
+                for (int i = 0; i < totalPossible; i++) {
+                    if (!eliminated[i]) {
+                        if (feedback(possibleCodes[i], guessString) != score) {
+                            eliminated[i] = true;
+                        }
+                    }
+                }
+
+                // Step 3: Pick next guess: choose one minimizing max remaining possibilities
+                int bestIndex = -1;
+                int bestWorst = Integer.MAX_VALUE;
+                for (int i = 0; i < totalPossible; i++) {
+                    if (eliminated[i]) continue;
+
+                    int worstCase = 0;
+                    for (int f = 0; f <= correctLength; f++) {
+                        int count = 0;
+                        for (int j = 0; j < totalPossible; j++) {
+                            if (!eliminated[j] && feedback(possibleCodes[j], possibleCodes[i]) == f) {
+                                count++;
+                            }
+                        }
+                        if (count > worstCase) worstCase = count;
+                    }
+                    if (worstCase < bestWorst) {
+                        bestWorst = worstCase;
+                        bestIndex = i;
+                    }
+                }
+                guessString = possibleCodes[bestIndex];
+            }
+        } else {
+            // ===== Position-by-position deduction algorithm =====
+            score = code.guess(guessString);
+            char[] correctCode = new char[length]; 
+            // Step 3: Deduce each position 
             for (int i = 0; i < length; i++) {  
                 for (char c : new char[]{'A','C', 'X', 'I', 'U'}) { 
                     String testChar = setAt(guessString, i, c); 
                     int r = code.guess(testChar); 
-                    if (r == matched + 1) { 
+                    if (r == score + 1) { 
                         correctCode[i] = c; 
                         break; 
                     } 
-                    if (r == matched - 1) { 
+                    if (r == score - 1) { 
                         correctCode[i] = 'B'; 
                         break; 
                     }   
                 } 
-            }
-        } else { 
-            char[] alphabet = {'B', 'A', 'C', 'X', 'I', 'U'};
-        int totalPossible = (int) Math.pow(alphabet.length, length);
-
-        // Generate all possible codes in an array
-        String[] possibleCodes = new String[totalPossible];
-        generateAllCodes(possibleCodes, alphabet, length);
-
-        boolean[] eliminated = new boolean[totalPossible]; // false = still possible
-
-        // Initial guess (classic Knuth starts with "AABB" for Mastermind; adapt here)
-        String guess = initialGuess(alphabet, length);
-        int guessIndex = -1;
-
-        while (true) {
-            int score = code.guess(guess);
-            if (score == length) {
-                System.out.println("I found the secret code. It is " + guess);
-                break;
-            }
-
-            // Eliminate inconsistent codes
-            for (int i = 0; i < totalPossible; i++) {
-                if (!eliminated[i]) {
-                    if (feedback(possibleCodes[i], guess) != score) {
-                        eliminated[i] = true;
-                    }
-                }
-            }
-
-            // Pick next guess: choose one minimizing max remaining possibilities
-            int bestIndex = -1;
-            int bestWorst = Integer.MAX_VALUE;
-            for (int i = 0; i < totalPossible; i++) {
-                if (eliminated[i]) continue;
-
-                int worstCase = 0;
-                for (int f = 0; f <= length; f++) {
-                    int count = 0;
-                    for (int j = 0; j < totalPossible; j++) {
-                        if (!eliminated[j] && feedback(possibleCodes[j], possibleCodes[i]) == f) {
-                            count++;
-                        }
-                    }
-                    if (count > worstCase) worstCase = count;
-                }
-                if (worstCase < bestWorst) {
-                    bestWorst = worstCase;
-                    bestIndex = i;
-                }
-            }
-            guess = possibleCodes[bestIndex];
-        } 
-        }
-        // Verify final guess 
-        String finalGuess = new String(correctCode); 
-        int finalScore = code.guess(finalGuess); 
-        if (finalScore == length) { 
-            System.out.println("Secret code cracked: " + finalGuess); 
-        } else { 
-            System.out.println("Something went wrong. Best guess: " + finalGuess); 
-        } 
-    } // --- Helper methods --- 
-    public int findLength() { 
-        int len = 1; 
-        while (true) { 
-            guessString = "B".repeat(len); 
-            int result = code.guess(guessString); 
-            if (result != -2) { return len; 
             } 
-            len++; 
-        } 
+            // Step 4: Verify final guess 
+
+            String finalGuess = new String(correctCode); 
+            code.guess(finalGuess); 
+            System.out.println("I found the secret code. It is " + finalGuess);
+        }
     }
 
-    public String setAt(String s, int index, char c) { 
-        char[] arr = s.toCharArray(); arr[index] = c; 
-        return new String(arr); 
+    // Initial guess
+    private String initialGuess(char[] alphabet, int length) {
+        if(length <= 6) {
+            char[] arr = new char[length];
+            for (int i = 0; i < length; i++) {
+                arr[i] = alphabet[i % alphabet.length];
+            }
+            return new String(arr);
+        } else {
+            String str = new String();
+            for(int i = 0; i < length; i++) {
+                str += "B";
+            }
+            return str;
+        }
     }
 
+    // Knuth's Algorithm: Generate all possible codes into given array
     private void generateAllCodes(String[] store, char[] alphabet, int length) {
         int total = store.length;
         for (int i = 0; i < total; i++) {
@@ -116,21 +132,30 @@ public class SecretCodeGuesser {
         }
     }
 
+    // Knuth's Algorithm: Feedback function — counts correct chars in correct position
     private int feedback(String code, String guess) {
         int correct = 0;
         for (int i = 0; i < code.length(); i++) {
             if (code.charAt(i) == guess.charAt(i)) {
                 correct++;
             }
-        }
+        }   
         return correct;
     }
 
-    private String initialGuess(char[] alphabet, int length) {
+    // Helper: repeat a character N times
+    private String repeatChar(char c, int length) {
         char[] arr = new char[length];
         for (int i = 0; i < length; i++) {
-            arr[i] = alphabet[i % alphabet.length];
+            arr[i] = c;
         }
         return new String(arr);
+    }
+
+    // Helper: creates a new string
+    public String setAt(String s, int index, char c) { 
+        char[] arr = s.toCharArray(); 
+        arr[index] = c; 
+        return new String(arr); 
     }
 }
