@@ -26,7 +26,7 @@ public class SecretCodeGuesser {
             String[] possibleCodes = new String[totalPossible];
             generateAllCodes(possibleCodes, alphabet, length);
 
-            boolean[] eliminated = new boolean[totalPossible]; // false = still possible
+            boolean[] eliminated = new boolean[totalPossible]; 
 
             while (true) {
                 score = code.guess(guessString);
@@ -35,14 +35,6 @@ public class SecretCodeGuesser {
                     break;
                 }
 
-                // Eliminate inconsistent codes
-                for (int i = 0; i < totalPossible; i++) {
-                    if (!eliminated[i]) {
-                        if (feedback(possibleCodes[i], guessString) != score) {
-                            eliminated[i] = true;
-                        }
-                    }
-                }
                 // Eliminate inconsistent codes
                 for (int i = 0; i < totalPossible; i++) {
                     if (!eliminated[i]) {
@@ -62,7 +54,7 @@ public class SecretCodeGuesser {
                     for (int f = 0; f <= length; f++) {
                         int count = 0;
                         for (int j = 0; j < totalPossible; j++) {
-                            if (!eliminated[j] && feedback(possibleCodes[j], possibleCodes[i]) == f) {
+                            if (feedback(possibleCodes[j], possibleCodes[i]) == f) {
                                 count++;
                             }
                         }
